@@ -108,6 +108,18 @@
       flex-wrap: wrap;
     }
 
+    .auth-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-email {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 13px;
+      font-weight: 400;
+    }
+
     textarea {
       background: #FFFFFF;
       border: 1px solid var(--border);
@@ -131,7 +143,7 @@
       color: var(--muted);
     }
     
-    input[type="text"], input[type="date"] {
+    input[type="text"], input[type="date"], input[type="email"] {
       background: #FFFFFF;
       border: 1px solid var(--border);
       color: var(--text);
@@ -142,7 +154,7 @@
       font-size: 14px;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
-    input[type="text"]:focus, input[type="date"]:focus {
+    input[type="text"]:focus, input[type="date"]:focus, input[type="email"]:focus {
       border-color: var(--header-bg);
       box-shadow: 0 0 0 3px rgba(33, 48, 128, 0.1);
     }
@@ -173,6 +185,10 @@
       box-shadow: 0 2px 8px rgba(33, 48, 128, 0.2);
     }
     button:active { transform: translateY(1px); }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
 
     .btn-ghost {
       background: transparent;
@@ -337,16 +353,134 @@
       background: var(--panel);
     }
 
+    /* Auth Modal */
+    .auth-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+
+    .auth-modal.hidden {
+      display: none;
+    }
+
+    .auth-modal-content {
+      background: #FFFFFF;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .auth-modal h2 {
+      margin: 0 0 8px 0;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 500;
+      font-size: 24px;
+      color: var(--header-bg);
+      text-align: center;
+    }
+
+    .auth-modal p {
+      margin: 0 0 24px 0;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .auth-form input[type="email"] {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 15px;
+    }
+
+    .auth-form button {
+      width: 100%;
+      padding: 14px;
+      font-size: 14px;
+    }
+
+    .auth-message {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .auth-message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .auth-message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     @media (max-width: 640px) {
       .task-form-row { grid-template-columns: 1fr; }
       .app-title { flex-direction: column; align-items: flex-start; }
       .logo-container { width: 100%; }
-      .controls { width: 100%; }
-      .controls input, .controls button { flex: 1; min-width: 0; }
+      .controls { width: 100%; flex-direction: column; }
+      .controls input, .controls button { flex: 1; min-width: 0; width: 100%; }
+      .auth-section { width: 100%; justify-content: space-between; }
     }
   </style>
 </head>
 <body>
+  <!-- Auth Modal -->
+  <div id="authModal" class="auth-modal">
+    <div class="auth-modal-content">
+      <h2>Welcome</h2>
+      <p>Sign in to access your tasks</p>
+      <form id="authForm" class="auth-form">
+        <input 
+          type="email" 
+          id="emailInput" 
+          placeholder="Enter your email address" 
+          required 
+        />
+        <button type="submit" id="authSubmitBtn">
+          <span id="authBtnText">Send Magic Link</span>
+          <span id="authBtnSpinner" class="loading-spinner" style="display: none;"></span>
+        </button>
+      </form>
+      <div id="authMessage" class="auth-message" style="display: none;"></div>
+    </div>
+  </div>
+
   <header>
     <div class="container">
       <div class="app-title">
@@ -360,15 +494,19 @@
           </div>
         </div>
         <div class="controls">
-          <input id="newCategoryInput" type="text" placeholder="New category name (e.g., Household)" style="background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3); color: var(--header-text);" />
-          <button id="addCategoryBtn" title="Add category">+ Add Category</button>
-          <button id="clearAllBtn" class="btn-ghost" title="Clear all data">Clear All</button>
+          <div class="auth-section">
+            <span id="userEmail" class="user-email"></span>
+            <button id="signOutBtn" class="btn-ghost" title="Sign out" style="display: none;">Sign Out</button>
+          </div>
+          <input id="newCategoryInput" type="text" placeholder="New category name (e.g., Household)" style="background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3); color: var(--header-text); display: none;" />
+          <button id="addCategoryBtn" title="Add category" style="display: none;">+ Add Category</button>
+          <button id="clearAllBtn" class="btn-ghost" title="Clear all data" style="display: none;">Clear All</button>
         </div>
       </div>
     </div>
   </header>
 
-  <main class="container">
+  <main class="container" id="mainContent" style="display: none;">
     <section id="columns" class="grid" aria-live="polite"></section>
 
     <section class="completed-panel" aria-live="polite">
@@ -389,14 +527,120 @@
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // State management
-    let state = { categories: [] };
+    let state = { categories: [], user: null };
+
+    // Auth functions
+    async function handleAuth(email) {
+      const authBtnText = byId('authBtnText');
+      const authBtnSpinner = byId('authBtnSpinner');
+      const authSubmitBtn = byId('authSubmitBtn');
+      const authMessage = byId('authMessage');
+
+      authBtnText.style.display = 'none';
+      authBtnSpinner.style.display = 'inline-block';
+      authSubmitBtn.disabled = true;
+      authMessage.style.display = 'none';
+
+      try {
+        const { error } = await supabase.auth.signInWithOtp({
+          email: email,
+          options: {
+            emailRedirectTo: window.location.origin
+          }
+        });
+
+        if (error) throw error;
+
+        authMessage.textContent = 'Check your email! We sent you a magic link to sign in.';
+        authMessage.className = 'auth-message success';
+        authMessage.style.display = 'block';
+        byId('emailInput').value = '';
+      } catch (error) {
+        console.error('Auth error:', error);
+        authMessage.textContent = error.message || 'Failed to send magic link. Please try again.';
+        authMessage.className = 'auth-message error';
+        authMessage.style.display = 'block';
+      } finally {
+        authBtnText.style.display = 'inline';
+        authBtnSpinner.style.display = 'none';
+        authSubmitBtn.disabled = false;
+      }
+    }
+
+    async function signOut() {
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        window.location.reload();
+      } catch (error) {
+        console.error('Sign out error:', error);
+        alert('Failed to sign out. Please try again.');
+      }
+    }
+
+    function showAuthModal() {
+      byId('authModal').classList.remove('hidden');
+      byId('mainContent').style.display = 'none';
+      byId('newCategoryInput').style.display = 'none';
+      byId('addCategoryBtn').style.display = 'none';
+      byId('clearAllBtn').style.display = 'none';
+      byId('signOutBtn').style.display = 'none';
+    }
+
+    function hideAuthModal() {
+      byId('authModal').classList.add('hidden');
+      byId('mainContent').style.display = 'block';
+      byId('newCategoryInput').style.display = 'block';
+      byId('addCategoryBtn').style.display = 'block';
+      byId('clearAllBtn').style.display = 'block';
+      byId('signOutBtn').style.display = 'block';
+    }
+
+    // Initialize auth
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        state.user = session.user;
+        byId('userEmail').textContent = session.user.email;
+        hideAuthModal();
+        loadData();
+      } else {
+        state.user = null;
+        showAuthModal();
+      }
+    });
+
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        state.user = session.user;
+        byId('userEmail').textContent = session.user.email;
+        hideAuthModal();
+        loadData();
+      } else {
+        showAuthModal();
+      }
+    });
+
+    // Auth form handler
+    byId('authForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = byId('emailInput').value.trim();
+      if (email) {
+        handleAuth(email);
+      }
+    });
+
+    byId('signOutBtn').addEventListener('click', signOut);
 
     async function loadData() {
+      if (!state.user) return;
+
       try {
         // Load columns
         const { data: columns, error: colError } = await supabase
           .from('columns')
           .select('*')
+          .eq('user_id', state.user.id)
           .order('created_at');
         
         if (colError) throw colError;
@@ -442,13 +686,14 @@
 
     // Category operations
     async function addCategory(name) {
+      if (!state.user) return;
       const trimmed = (name || '').trim();
       if (!trimmed) return;
       
       try {
         const { data, error } = await supabase
           .from('columns')
-          .insert([{ name: trimmed }])
+          .insert([{ name: trimmed, user_id: state.user.id }])
           .select();
         
         if (error) throw error;
@@ -762,10 +1007,11 @@
 
     byId('clearAllBtn').addEventListener('click', async () => {
       if (!confirm('This will remove all categories and tasks. Continue?')) return;
+      if (!state.user) return;
       
       try {
         await supabase.from('tasks').delete().neq('id', 0);
-        await supabase.from('columns').delete().neq('id', 0);
+        await supabase.from('columns').delete().eq('user_id', state.user.id);
         await loadData();
       } catch (e) {
         console.error('Failed to clear all', e);
@@ -787,9 +1033,6 @@
         alert('Failed to clear completed tasks. Please try again.');
       }
     });
-
-    // Initial load
-    loadData();
   </script>
 </body>
 </html>
