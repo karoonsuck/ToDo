@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Two Monks Consulting - Task Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #FFFFFF;
+      --panel: #F8F9FA;
+      --panel-2: #F1F3F5;
+      --text: #000000;
+      --muted: rgba(0, 0, 0, 0.6);
+      --accent: rgba(0, 0, 0, 0.1);
+      --accent-2: rgba(0, 0, 0, 0.05);
+      --danger: rgba(0, 0, 0, 0.05);
+      --border: rgba(0, 0, 0, 0.12);
+      --chip: rgba(0, 0, 0, 0.08);
+      --header-bg: #213080;
+      --header-text: #FFFFFF;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--header-bg);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .app-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 8px 0;
+      min-height: 80px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      flex-shrink: 0;
+    }
+
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .app-title-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-title h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 1px;
+      font-weight: 400;
+      text-transform: uppercase;
+      color: var(--header-text);
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    .app-tagline {
+      font-size: 10px;
+      letter-spacing: 1px;
+      font-weight: 300;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.8);
+      margin-top: 2px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    textarea {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 6px;
+      outline: none;
+      resize: none;
+      overflow: hidden;
+      min-height: 40px;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    textarea:focus {
+      border-color: var(--header-bg);
+      box-shadow: 0 0 0 3px rgba(33, 48, 128, 0.1);
+    }
+    textarea::placeholder {
+      color: var(--muted);
+    }
+    
+    input[type="text"], input[type="date"] {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 6px;
+      outline: none;
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    input[type="text"]:focus, input[type="date"]:focus {
+      border-color: var(--header-bg);
+      box-shadow: 0 0 0 3px rgba(33, 48, 128, 0.1);
+    }
+    input::placeholder {
+      color: var(--muted);
+    }
+    
+    header input::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    button {
+      background: var(--header-bg);
+      border: 1px solid var(--header-bg);
+      color: var(--header-text);
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-size: 12px;
+      font-family: 'Poppins', sans-serif;
+      transition: background 0.2s ease, transform 0.05s ease, box-shadow 0.2s ease;
+    }
+    button:hover { 
+      background: #2a3d9e;
+      box-shadow: 0 2px 8px rgba(33, 48, 128, 0.2);
+    }
+    button:active { transform: translateY(1px); }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--header-text);
+      color: var(--header-text);
+    }
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      padding: 16px 0 8px 0;
+    }
+
+    .column {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 120px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .col-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .col-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-family: 'Poppins', sans-serif;
+      color: var(--text);
+    }
+    .col-actions { display: flex; align-items: center; gap: 6px; }
+    .icon-btn {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: inline-grid;
+      place-items: center;
+      font-size: 16px;
+      padding: 0;
+    }
+    .icon-btn:hover { 
+      color: var(--text);
+      background: var(--panel-2);
+      border-color: var(--text);
+    }
+
+    .task-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .task-form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .task-form textarea,
+    .task-form input[type="text"],
+    .task-form input[type="date"] { 
+      width: 100%; 
+    }
+
+    .tasks { display: flex; flex-direction: column; gap: 8px; }
+
+    .task {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .task-main { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .task-title { 
+      font-weight: 400; 
+      font-size: 15px; 
+      line-height: 1.6;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      color: var(--text);
+    }
+    .task-meta { 
+      font-size: 12px; 
+      color: var(--muted); 
+      display: flex; 
+      gap: 8px; 
+      flex-wrap: wrap; 
+    }
+    .chip { 
+      color: var(--text); 
+      background: var(--chip); 
+      padding: 4px 10px; 
+      border-radius: 16px; 
+      font-size: 11px;
+      font-weight: 400;
+    }
+    .due { color: var(--muted); }
+
+    .divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+    .completed-panel {
+      margin-top: 32px;
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+    .completed-header { 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+    }
+    .completed-header h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-family: 'Poppins', sans-serif;
+      color: var(--text);
+    }
+    .completed-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-top: 10px; }
+    .completed-item { opacity: 0.8; text-decoration: line-through; }
+    .muted { color: var(--muted); }
+    .danger { background: #FFFFFF; border: 1px solid var(--border); }
+    .success { background: var(--header-bg); border: 1px solid var(--header-bg); color: var(--header-text); }
+    .success:hover {
+      background: #2a3d9e;
+      box-shadow: 0 2px 8px rgba(33, 48, 128, 0.2);
+    }
+
+    .empty { 
+      color: var(--muted); 
+      text-align: center; 
+      padding: 24px; 
+      border: 1px dashed var(--border); 
+      border-radius: 8px;
+      font-weight: 400;
+      letter-spacing: 0.3px;
+      background: var(--panel);
+    }
+
+    @media (max-width: 640px) {
+      .task-form-row { grid-template-columns: 1fr; }
+      .app-title { flex-direction: column; align-items: flex-start; }
+      .logo-container { width: 100%; }
+      .controls { width: 100%; }
+      .controls input, .controls button { flex: 1; min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="app-title">
+        <div class="logo-container">
+          <div class="logo">
+            <img src="IG Two Monks 3.jpg" alt="Two Monks Consulting Logo" />
+          </div>
+          <div class="app-title-text">
+            <h1>TWO MONKS CONSULTING</h1>
+            <div class="app-tagline">QUIET MINDS. POWERFUL SOLUTIONS.</div>
+          </div>
+        </div>
+        <div class="controls">
+          <input id="newCategoryInput" type="text" placeholder="New category name (e.g., Household)" style="background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3); color: var(--header-text);" />
+          <button id="addCategoryBtn" title="Add category">+ Add Category</button>
+          <button id="clearAllBtn" class="btn-ghost" title="Clear all data">Clear All</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="columns" class="grid" aria-live="polite"></section>
+
+    <section class="completed-panel" aria-live="polite">
+      <div class="completed-header">
+        <h2>Completed Tasks</h2>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button id="clearCompletedBtn" class="btn-ghost" title="Delete all completed tasks">Clear Completed</button>
+        </div>
+      </div>
+      <div id="completedList" class="completed-list"></div>
+    </section>
+  </main>
+
+  <script>
+    // Supabase configuration
+    const SUPABASE_URL = 'https://ljejqkuqdnhvkvrtgkff.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqZWpxa3VxZG5odmt2cnRna2ZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NjIwNTYsImV4cCI6MjA3ODAzODA1Nn0.B2iCJeKeRxQ_xiT_JqbqGw_-lwjViuVoJwQzIUI6tKI';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // State management
+    let state = { categories: [] };
+
+    async function loadData() {
+      try {
+        // Load columns
+        const { data: columns, error: colError } = await supabase
+          .from('columns')
+          .select('*')
+          .order('created_at');
+        
+        if (colError) throw colError;
+
+        // Load tasks
+        const { data: tasks, error: taskError } = await supabase
+          .from('tasks')
+          .select('*')
+          .order('created_at');
+        
+        if (taskError) throw taskError;
+
+        // Build state
+        state.categories = (columns || []).map(col => ({
+          id: col.id.toString(),
+          name: col.name,
+          tasks: (tasks || [])
+            .filter(t => t.column_id === col.id)
+            .map(t => ({
+              id: t.id.toString(),
+              title: t.title,
+              assignee: t.assigned_to || '',
+              dueDate: t.due_date || '',
+              completed: t.completed || false
+            }))
+        }));
+
+        render();
+      } catch (e) {
+        console.error('Failed to load data', e);
+      }
+    }
+
+    // Utilities
+    function uid() { return Math.random().toString(36).slice(2, 10); }
+    function byId(id) { return document.getElementById(id); }
+    function fmtDate(iso) {
+      if (!iso) return 'No due date';
+      const d = new Date(iso + (iso.length === 10 ? 'T00:00:00' : ''));
+      if (Number.isNaN(d.getTime())) return 'No due date';
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    // Category operations
+    async function addCategory(name) {
+      const trimmed = (name || '').trim();
+      if (!trimmed) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('columns')
+          .insert([{ name: trimmed }])
+          .select();
+        
+        if (error) throw error;
+        await loadData();
+      } catch (e) {
+        console.error('Failed to add category', e);
+        alert('Failed to add category. Please try again.');
+      }
+    }
+
+    async function renameCategory(categoryId) {
+      const category = state.categories.find(c => c.id === categoryId);
+      if (!category) return;
+      const newName = prompt('Rename category', category.name);
+      if (!newName || !newName.trim()) return;
+      
+      try {
+        const { error } = await supabase
+          .from('columns')
+          .update({ name: newName.trim() })
+          .eq('id', parseInt(categoryId));
+        
+        if (error) throw error;
+        await loadData();
+      } catch (e) {
+        console.error('Failed to rename category', e);
+        alert('Failed to rename category. Please try again.');
+      }
+    }
+
+    async function deleteCategory(categoryId) {
+      const category = state.categories.find(c => c.id === categoryId);
+      if (!category) return;
+      const hasTasks = category.tasks.length > 0;
+      if (hasTasks && !confirm('Delete this category and all its tasks?')) return;
+      
+      try {
+        // Delete tasks first
+        await supabase
+          .from('tasks')
+          .delete()
+          .eq('column_id', parseInt(categoryId));
+        
+        // Then delete column
+        const { error } = await supabase
+          .from('columns')
+          .delete()
+          .eq('id', parseInt(categoryId));
+        
+        if (error) throw error;
+        await loadData();
+      } catch (e) {
+        console.error('Failed to delete category', e);
+        alert('Failed to delete category. Please try again.');
+      }
+    }
+
+    // Task operations
+    async function addTask(categoryId, title, assignee, dueDate) {
+      const trimmed = (title || '').trim();
+      if (!trimmed) return;
+      
+      try {
+        const { error } = await supabase
+          .from('tasks')
+          .insert([{
+            column_id: parseInt(categoryId),
+            title: trimmed,
+            assigned_to: (assignee || '').trim() || 'Unassigned',
+            due_date: dueDate || null,
+            completed: false
+          }]);
+        
+        if (error) throw error;
+        await loadData();
+      } catch (e) {
+        console.error('Failed to add task', e);
+        alert('Failed to add task. Please try again.');
+      }
+    }
+
+    async function toggleTask(categoryId, taskId, isCompleted) {
+      try {
+        const updateData = {
+          completed: !!isCompleted
+        };
+        
+        if (isCompleted) {
+          updateData.completed_at = new Date().toISOString();
+        } else {
+          updateData.completed_at = null;
+        }
+        
+        const { error } = await supabase
+          .from('tasks')
+          .update(updateData)
+          .eq('id', parseInt(taskId));
+        
+        if (error) throw error;
+        await loadData();
+      } catch (e) {
+        console.error('Failed to toggle task', e);
+        alert('Failed to update task. Please try again.');
+      }
+    }
+
+    async function removeTask(categoryId, taskId) {
+      try {
+        const { error } = await supabase
+          .from('tasks')
+          .delete()
+          .eq('id', parseInt(taskId));
+        
+        if (error) throw error;
+        await loadData();
+      } catch (e) {
+        console.error('Failed to delete task', e);
+        alert('Failed to delete task. Please try again.');
+      }
+    }
+
+    // Rendering
+    function render() {
+      renderColumns();
+      renderCompleted();
+    }
+
+    function renderColumns() {
+      const columns = byId('columns');
+      columns.innerHTML = '';
+
+      if (state.categories.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'No categories yet. Add your first category above.';
+        empty.style.gridColumn = '1 / -1';
+        columns.appendChild(empty);
+        return;
+      }
+
+      state.categories.forEach(category => {
+        const col = document.createElement('section');
+        col.className = 'column';
+        col.setAttribute('data-category-id', category.id);
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'col-header';
+        const title = document.createElement('div');
+        title.className = 'col-title';
+        title.innerHTML = `<span class="chip" title="Category">${escapeHtml(category.name)}</span>`;
+        const actions = document.createElement('div');
+        actions.className = 'col-actions';
+        actions.innerHTML = `
+          <button class="icon-btn" title="Rename" aria-label="Rename" data-action="rename">✏️</button>
+          <button class="icon-btn" title="Delete" aria-label="Delete" data-action="delete">🗑️</button>
+        `;
+        header.appendChild(title);
+        header.appendChild(actions);
+
+        // Task form
+        const form = document.createElement('div');
+        form.className = 'task-form';
+        form.innerHTML = `
+          <textarea placeholder="Task title" aria-label="Task title" data-el="title" rows="1"></textarea>
+          <div class="task-form-row">
+            <input type="text" placeholder="Assignee" aria-label="Assignee" data-el="assignee" />
+            <input type="date" aria-label="Due date" data-el="due" />
+          </div>
+          <button data-el="add" class="success">Add Task</button>
+        `;
+        
+        // Auto-resize textarea
+        const titleTextarea = form.querySelector('[data-el="title"]');
+        titleTextarea.addEventListener('input', function() {
+          this.style.height = 'auto';
+          this.style.height = Math.max(40, this.scrollHeight) + 'px';
+        });
+
+        // Task list
+        const list = document.createElement('div');
+        list.className = 'tasks';
+
+        const activeTasks = category.tasks.filter(t => !t.completed);
+        if (activeTasks.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'No active tasks';
+        empty.style.padding = '8px';
+        empty.style.fontSize = '12px';
+        list.appendChild(empty);
+        } else {
+          activeTasks.forEach(task => list.appendChild(renderTask(category.id, task)));
+        }
+
+        col.appendChild(header);
+        col.appendChild(form);
+        col.appendChild(list);
+
+        // Events
+        actions.querySelector('[data-action="rename"]').addEventListener('click', () => renameCategory(category.id));
+        actions.querySelector('[data-action="delete"]').addEventListener('click', () => deleteCategory(category.id));
+        form.querySelector('[data-el="add"]').addEventListener('click', () => {
+          const titleInput = form.querySelector('[data-el="title"]');
+          const assigneeInput = form.querySelector('[data-el="assignee"]');
+          const dueInput = form.querySelector('[data-el="due"]');
+          addTask(category.id, titleInput.value, assigneeInput.value, dueInput.value);
+          titleInput.value = '';
+          titleInput.style.height = '40px';
+          assigneeInput.value = '';
+          dueInput.value = '';
+          titleInput.focus();
+        });
+        titleTextarea.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            form.querySelector('[data-el="add"]').click();
+          }
+        });
+
+        columns.appendChild(col);
+      });
+    }
+
+    function renderTask(categoryId, task) {
+      const el = document.createElement('div');
+      el.className = 'task';
+      el.setAttribute('data-task-id', task.id);
+      el.innerHTML = `
+        <input type="checkbox" ${task.completed ? 'checked' : ''} aria-label="Mark complete" style="margin-top: 2px;" />
+        <div class="task-main">
+          <div class="task-title">${escapeHtml(task.title)}</div>
+          <div class="task-meta">
+            <span class="chip" title="Assignee">${escapeHtml(task.assignee || 'Unassigned')}</span>
+            <span class="due" title="Due date">Due: ${fmtDate(task.dueDate)}</span>
+          </div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="icon-btn" title="Delete task" aria-label="Delete task">🗑️</button>
+        </div>
+      `;
+      const checkbox = el.querySelector('input[type="checkbox"]');
+      checkbox.addEventListener('change', (e) => toggleTask(categoryId, task.id, e.target.checked));
+      el.querySelector('button').addEventListener('click', () => removeTask(categoryId, task.id));
+      return el;
+    }
+
+    function renderCompleted() {
+      const container = byId('completedList');
+      container.innerHTML = '';
+      const completed = [];
+      state.categories.forEach(cat => {
+        cat.tasks.forEach(t => { if (t.completed) completed.push({ category: cat, task: t }); });
+      });
+
+      if (completed.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'No completed tasks yet.';
+        empty.style.gridColumn = '1 / -1';
+        container.appendChild(empty);
+        return;
+      }
+
+      completed.forEach(({ category, task }) => {
+        const card = document.createElement('div');
+        card.className = 'task completed-item';
+        card.innerHTML = `
+          <div style="display:flex; align-items:center; gap:8px;">
+            ✅
+          </div>
+          <div class="task-main">
+            <div class="task-title">${escapeHtml(task.title)}</div>
+            <div class="task-meta">
+              <span class="chip" title="Category">${escapeHtml(category.name)}</span>
+              <span class="chip" title="Assignee">${escapeHtml(task.assignee || 'Unassigned')}</span>
+              <span class="due">Due: ${fmtDate(task.dueDate)}</span>
+            </div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="icon-btn" title="Restore" aria-label="Restore">↩️</button>
+            <button class="icon-btn" title="Delete" aria-label="Delete">🗑️</button>
+          </div>
+        `;
+        const [restoreBtn, deleteBtn] = card.querySelectorAll('button');
+        restoreBtn.addEventListener('click', () => toggleTask(category.id, task.id, false));
+        deleteBtn.addEventListener('click', () => removeTask(category.id, task.id));
+        container.appendChild(card);
+      });
+    }
+
+    // Helpers
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    // Global controls
+    byId('addCategoryBtn').addEventListener('click', () => {
+      addCategory(byId('newCategoryInput').value);
+      byId('newCategoryInput').value = '';
+      byId('newCategoryInput').focus();
+    });
+    byId('newCategoryInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') byId('addCategoryBtn').click();
+    });
+
+    byId('clearAllBtn').addEventListener('click', async () => {
+      if (!confirm('This will remove all categories and tasks. Continue?')) return;
+      
+      try {
+        await supabase.from('tasks').delete().neq('id', 0);
+        await supabase.from('columns').delete().neq('id', 0);
+        await loadData();
+      } catch (e) {
+        console.error('Failed to clear all', e);
+        alert('Failed to clear data. Please try again.');
+      }
+    });
+
+    byId('clearCompletedBtn').addEventListener('click', async () => {
+      try {
+        const { error } = await supabase
+          .from('tasks')
+          .delete()
+          .eq('completed', true);
+        
+        if (error) throw error;
+        await loadData();
+      } catch (e) {
+        console.error('Failed to clear completed', e);
+        alert('Failed to clear completed tasks. Please try again.');
+      }
+    });
+
+    // Initial load
+    loadData();
+  </script>
+</body>
+</html>
